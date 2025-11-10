@@ -13,19 +13,47 @@ if 'enemies' not in st.session_state:
     st.session_state.enemies = [[random.randint(0, WIDTH-1), 0] for _ in range(5)]
 if 'score' not in st.session_state:
     st.session_state.score = 0
+if 'move' not in st.session_state:
+    st.session_state.move = None
+if 'shoot' not in st.session_state:
+    st.session_state.shoot = False
 
-st.title("🎮 턴제 갤라그 게임")
+st.title("🎮 키보드 턴제 갤라그 게임")
+st.write("←, → 화살표로 이동, 스페이스바로 발사")
 
-# 키 입력 선택 (턴제 방식)
-move = st.radio("플레이어 이동/행동 선택:", ["← 왼쪽", "→ 오른쪽", "발사", "그대로"])
+# HTML + JS로 키 입력 받기
+st.components.v1.html("""
+<script>
+document.addEventListener('keydown', function(event) {
+    if(event.key === 'ArrowLeft'){
+        window.parent.postMessage({func:'move', dir:'left'}, '*');
+    } else if(event.key === 'ArrowRight'){
+        window.parent.postMessage({func:'move', dir:'right'}, '*');
+    } else if(event.key === ' '){
+        window.parent.postMessage({func:'shoot'}, '*');
+    }
+});
+</script>
+""", height=0)
 
-# 플레이어 이동 및 발사 처리
-if move == "← 왼쪽":
+# 키 입력 처리 (Streamlit 메시지 받기)
+def handle_move(msg):
+    if msg["func"] == "move":
+        st.session_state.move = msg["dir"]
+    elif msg["func"] == "shoot":
+        st.session_state.shoot = True
+
+# 플레이어 이동
+if st.session_state.move == 'left':
     st.session_state.player_x = max(0, st.session_state.player_x - 1)
-elif move == "→ 오른쪽":
+elif st.session_state.move == 'right':
     st.session_state.player_x = min(WIDTH-1, st.session_state.player_x + 1)
-elif move == "발사":
+st.session_state.move = None
+
+# 총알 발사
+if st.session_state.shoot:
     st.session_state.bullets.append([st.session_state.player_x, HEIGHT-1])
+    st.session_state.shoot = False
 
 # 적 이동
 new_enemies = []

@@ -1,162 +1,95 @@
-import pygame
-import random
-import sys
+import pygame, sys, random
 
-# 초기화
 pygame.init()
+
+# 화면 설정
 WIDTH, HEIGHT = 500, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("🚀 Python Galaga Clone")
+pygame.display.set_caption("🚀 Python Galaga")
 
+# 기본 설정
 clock = pygame.time.Clock()
 font = pygame.font.SysFont("Arial", 20)
+BLACK, WHITE = (0,0,0), (255,255,255)
 
-# 색상
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-RED = (255, 0, 0)
-YELLOW = (255, 255, 0)
-CYAN = (0, 255, 255)
-GREEN = (0, 255, 0)
+# 플레이어
+player = pygame.Rect(WIDTH//2-20, HEIGHT-60, 40, 25)
+player_speed = 6
+bullets = []
+enemies = []
+score = 0
+game_over = False
 
-# 플레이어 클래스
-class Player:
-    def __init__(self):
-        self.width, self.height = 40, 25
-        self.x = WIDTH // 2 - self.width // 2
-        self.y = HEIGHT - 60
-        self.speed = 6
-        self.color = CYAN
-        self.bullets = []
-
-    def move(self, keys):
-        if keys[pygame.K_LEFT] and self.x > 0:
-            self.x -= self.speed
-        if keys[pygame.K_RIGHT] and self.x < WIDTH - self.width:
-            self.x += self.speed
-
-    def shoot(self):
-        if len(self.bullets) < 4:  # 최대 4발 제한
-            self.bullets.append(Bullet(self.x + self.width // 2 - 2, self.y))
-
-    def draw(self):
-        pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
-        for bullet in self.bullets:
-            bullet.update()
-            bullet.draw()
-
-# 총알 클래스
-class Bullet:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.width = 4
-        self.height = 10
-        self.color = YELLOW
-        self.speed = 8
-
-    def update(self):
-        self.y -= self.speed
-
-    def draw(self):
-        pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
-
-# 적 클래스
-class Enemy:
-    def __init__(self, x, y, color):
-        self.x = x
-        self.y = y
-        self.width = 30
-        self.height = 20
-        self.color = color
-        self.dx = 2
-        self.dy = 0
-        self.alive = True
-
-    def update(self):
-        self.x += self.dx
-        if self.x <= 0 or self.x + self.width >= WIDTH:
-            self.dx *= -1
-            self.y += 20
-
-    def draw(self):
-        if self.alive:
-            pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
-
-# 적 편대 생성
+# 적 생성
 def create_enemies():
-    enemies = []
-    colors = [RED, (255, 165, 0), YELLOW, GREEN]
+    colors = [(255,0,0), (255,165,0), (255,255,0), (0,255,0)]
+    e = []
     for row in range(4):
         for col in range(8):
-            enemies.append(Enemy(50 + col * 50, 50 + row * 40, colors[row]))
-    return enemies
+            e.append(pygame.Rect(50+col*50, 50+row*40, 30, 20))
+    return e
 
-# 메인 게임 함수
-def main():
-    player = Player()
-    enemies = create_enemies()
-    score = 0
-    running = True
-    game_over = False
+enemies = create_enemies()
 
-    while running:
-        clock.tick(60)
-        screen.fill(BLACK)
-        keys = pygame.key.get_pressed()
+# 게임 루프
+running = True
+while running:
+    clock.tick(60)
+    screen.fill(BLACK)
+    keys = pygame.key.get_pressed()
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if not game_over:
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE:
-                        player.shoot()
-            if game_over and event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                main()
-
-        # 게임 로직
-        if not game_over:
-            player.move(keys)
-
-            # 총알 이동
-            for bullet in player.bullets[:]:
-                bullet.update()
-                if bullet.y < 0:
-                    player.bullets.remove(bullet)
-
-            # 적 이동 및 충돌 체크
-            for enemy in enemies[:]:
-                enemy.update()
-                for bullet in player.bullets[:]:
-                    if (bullet.x < enemy.x + enemy.width and
-                        bullet.x + bullet.width > enemy.x and
-                        bullet.y < enemy.y + enemy.height and
-                        bullet.y + bullet.height > enemy.y):
-                        enemies.remove(enemy)
-                        player.bullets.remove(bullet)
-                        score += 10
-                        break
-                if enemy.y + enemy.height >= player.y:
-                    game_over = True
-
-            # 모든 적 제거 시 재생성
-            if not enemies:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+            pygame.quit()
+            sys.exit()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE and not game_over:
+                bullets.append(pygame.Rect(player.x+18, player.y, 4, 10))
+            if game_over and event.key == pygame.K_r:
                 enemies = create_enemies()
+                bullets.clear()
+                score = 0
+                game_over = False
 
-            # 그리기
-            player.draw()
-            for enemy in enemies:
-                enemy.draw()
+    if not game_over:
+        # 이동
+        if keys[pygame.K_LEFT] and player.x > 0:
+            player.x -= player_speed
+        if keys[pygame.K_RIGHT] and player.x < WIDTH-player.width:
+            player.x += player_speed
 
-            score_text = font.render(f"Score: {score}", True, WHITE)
-            screen.blit(score_text, (10, 10))
-        else:
-            game_over_text = font.render("GAME OVER! Press R to Restart", True, WHITE)
-            screen.blit(game_over_text, (120, HEIGHT // 2))
+        # 총알 이동
+        for b in bullets[:]:
+            b.y -= 8
+            if b.y < 0:
+                bullets.remove(b)
 
-        pygame.display.flip()
+        # 적 이동
+        for e in enemies[:]:
+            e.y += 0.3
+            # 충돌 확인
+            for b in bullets[:]:
+                if e.colliderect(b):
+                    if e in enemies:
+                        enemies.remove(e)
+                    bullets.remove(b)
+                    score += 10
 
-if __name__ == "__main__":
-    main()
+            if e.y > HEIGHT - 60:
+                game_over = True
+
+        # 그리기
+        pygame.draw.rect(screen, (0,255,255), player)
+        for b in bullets:
+            pygame.draw.rect(screen, (255,255,0), b)
+        for e in enemies:
+            pygame.draw.rect(screen, (255,0,0), e)
+
+        text = font.render(f"Score: {score}", True, WHITE)
+        screen.blit(text, (10, 10))
+    else:
+        msg = font.render("GAME OVER! Press R to restart", True, WHITE)
+        screen.blit(msg, (100, HEIGHT//2))
+
+    pygame.display.flip()

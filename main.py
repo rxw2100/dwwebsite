@@ -1,6 +1,5 @@
 import streamlit as st
 import random
-import time
 
 WIDTH = 10
 HEIGHT = 10
@@ -14,46 +13,19 @@ if 'enemies' not in st.session_state:
     st.session_state.enemies = [[random.randint(0, WIDTH-1), 0] for _ in range(5)]
 if 'score' not in st.session_state:
     st.session_state.score = 0
-if 'move' not in st.session_state:
-    st.session_state.move = None
-if 'shoot' not in st.session_state:
-    st.session_state.shoot = False
 
-# HTML + JS로 키보드 입력 받기
-st.components.v1.html("""
-<script>
-document.addEventListener('keydown', function(event) {
-    if(event.key === 'ArrowLeft'){
-        window.parent.postMessage({func:'move', dir:'left'}, '*');
-    } else if(event.key === 'ArrowRight'){
-        window.parent.postMessage({func:'move', dir:'right'}, '*');
-    } else if(event.key === ' '){
-        window.parent.postMessage({func:'shoot'}, '*');
-    }
-});
-</script>
-""", height=0)
+st.title("🎮 턴제 갤라그 게임")
 
-# Streamlit에서 메시지 처리
-def handle_msg(msg):
-    if msg["func"] == "move":
-        st.session_state.move = msg["dir"]
-    elif msg["func"] == "shoot":
-        st.session_state.shoot = True
+# 키 입력 선택 (턴제 방식)
+move = st.radio("플레이어 이동/행동 선택:", ["← 왼쪽", "→ 오른쪽", "발사", "그대로"])
 
-st.experimental_set_query_params()  # 메시지 초기화
-
-# 플레이어 이동
-if st.session_state.move == 'left':
+# 플레이어 이동 및 발사 처리
+if move == "← 왼쪽":
     st.session_state.player_x = max(0, st.session_state.player_x - 1)
-elif st.session_state.move == 'right':
+elif move == "→ 오른쪽":
     st.session_state.player_x = min(WIDTH-1, st.session_state.player_x + 1)
-st.session_state.move = None
-
-# 총알 발사
-if st.session_state.shoot:
+elif move == "발사":
     st.session_state.bullets.append([st.session_state.player_x, HEIGHT-1])
-    st.session_state.shoot = False
 
 # 적 이동
 new_enemies = []
@@ -77,7 +49,7 @@ for bx, by in st.session_state.bullets:
 st.session_state.bullets = new_bullets
 
 # 새로운 적 생성
-if random.random() < 0.2:
+if random.random() < 0.3:
     st.session_state.enemies.append([random.randint(0, WIDTH-1), 0])
 
 # 게임판 출력
@@ -88,8 +60,5 @@ for bx, by in st.session_state.bullets:
     board[by][bx] = '🔺'
 board[HEIGHT-1][st.session_state.player_x] = '🚀'
 
-st.write("\n".join("".join(row) for row in board))
-st.write(f"점수: {st.session_state.score}")
-
-time.sleep(0.2)
-st.experimental_rerun()
+st.text("\n".join("".join(row) for row in board))
+st.text(f"점수: {st.session_state.score}")

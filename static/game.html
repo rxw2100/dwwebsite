@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Streamlit Galaga</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: black;
+      }
+      #gameCanvas {
+        display: block;
+        margin: 0 auto;
+        background: radial-gradient(circle at center, #000 0%, #111 100%);
+        border: 2px solid #333;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="gameCanvas" width="500" height="600"></canvas>
+    <script src="game.js"></script>
+  </body>
+</html>
